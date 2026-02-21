@@ -1,6 +1,7 @@
 const parseBody = require("../bodyParser/parseBody");
 const userModel = require("../models/userModel");
 const { saveWallet, getWallet } = require("../models/walletModel");
+const { getHistorique, saveHistorique } = require("../models/historique");
 
 async function createWallet(req, res) {
   try {
@@ -58,12 +59,20 @@ async function deposit(req, res, id) {
     }
 
     wallet.sold += amount;
-    console.log(wallets);
-
     await saveWallet(wallets);
+    const operation = await getHistorique();
+    const newHistorique = {
+      id: Date.now(),
+      wallet_id: wallet.id,
+      type: "deposit",
+      amount,
+      date: new Date().toISOString(),
+    };
+    operation.push(newHistorique);
+    await saveHistorique(operation);
 
     res.writeHead(200);
-    res.end(JSON.stringify(wallet));
+    res.end(JSON.stringify({ wallet, operation: newHistorique }));
   } catch (err) {
     console.log(err);
     res.writeHead(500);
@@ -73,7 +82,7 @@ async function deposit(req, res, id) {
 async function getWallets(req, res) {
   try {
     const wallets = await getWallet();
-     res.writeHead(200, { "Content-Type": "application/json" });
+    res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(wallets));
   } catch (err) {
     console.log(err);
@@ -87,7 +96,7 @@ async function withdraw(req, res, id) {
     const amount = body.amount;
 
     if (!amount || amount <= 0) {
-         res.writeHead(500, { "Content-Type": "application/json" });
+      res.writeHead(500, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Amount must be positive" }));
     }
 
@@ -105,9 +114,18 @@ async function withdraw(req, res, id) {
     }
     wallet.sold -= amount;
     await saveWallet(wallets);
-
+    const operation = await getHistorique();
+    const newHistorique = {
+      id: Date.now(),
+      wallet_id: wallet.id,
+      type: "withdraw",
+      amount,
+      date: new Date().toISOString(),
+    };
+    operation.push(newHistorique);
+    await saveHistorique(operation);
     res.writeHead(200);
-    res.end(JSON.stringify(wallet));
+    res.end(JSON.stringify({ wallet, operation: newHistorique }));
   } catch (err) {
     res.writeHead(500);
     res.end(JSON.stringify({ error: "Server error" }));

@@ -1,13 +1,11 @@
 const fs = require("fs").promises;
 const path = require("path");
 
-//../walet/data/users.json
 const filePath = path.join(__dirname, "..", "data", "users.json");
 console.log("Users file path:", filePath);
 async function getUsers() {
   try {
     const data = await fs.readFile(filePath, "utf-8");
-    // Handle empty file
     if (!data || data.trim() === '') {
       return [];
     }
